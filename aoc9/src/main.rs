@@ -102,8 +102,8 @@ fn read_input(filename: &str) -> Result<Vec<i64>, Error> {
 fn main() {
     let input = read_input("input").unwrap();
     let mut xmas = XMAS::new();
-    let part1 = xmas.get_first_number(25, &input);
     let now = Instant::now();
+    let part1 = xmas.get_first_number(25, &input);
     println!("Part 1: {}", part1);
     println!("Runtime {} us", now.elapsed().as_micros());
     let now = Instant::now();
