@@ -2,6 +2,7 @@ use std::cmp::min;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, Error, ErrorKind};
+use std::iter::Zip;
 use std::time::Instant;
 
 fn read_input(filename: &str) -> Result<Vec<Vec<i64>>, Error> {
@@ -101,34 +102,29 @@ impl Grid {
             row_size, ius, col_size, jus
         );
         */
-        let row_up: Vec<i64> = (0..ius).rev().map(|k| self.grid[k][jus]).collect();
-        let row_down: Vec<i64> = ((ius + 1)..(row_size))
-            .map(|k| self.grid[k][j as usize])
-            .collect();
-        let col_left: Vec<i64> = (0..jus).rev().map(|k| self.grid[ius][k]).collect();
-        let col_right: Vec<i64> = ((jus + 1)..(col_size)).map(|k| self.grid[ius][k]).collect();
+        let row_up: Box<dyn Iterator<Item = (usize, usize)>> =
+            Box::new((0..ius).rev().zip(vec![jus; ius]));
+        let row_down: Box<dyn Iterator<Item = (usize, usize)>> =
+            Box::new(((ius + 1)..(row_size)).zip(vec![jus; row_size - ius - 1]));
+        let col_left: Box<dyn Iterator<Item = (usize, usize)>> =
+            Box::new(vec![ius; jus].into_iter().zip((0..jus).rev()));
+        let col_right: Box<dyn Iterator<Item = (usize, usize)>> = Box::new(
+            vec![ius; col_size - jus - 1]
+                .into_iter()
+                .zip((jus + 1)..(col_size)),
+        );
         let lim = min(ius, jus);
-        let diag_up_left: Vec<i64> = ((ius - lim)..ius)
-            .rev()
-            .zip((jus - lim..jus).rev())
-            .map(|(k, l)| self.grid[k][l])
-            .collect();
+        let diag_up_left: Box<dyn Iterator<Item = (usize, usize)>> =
+            Box::new(((ius - lim)..ius).rev().zip((jus - lim..jus).rev()));
         let lim = min(ius, col_size - 1 - jus);
-        let diag_up_right: Vec<i64> = ((ius - lim)..ius)
-            .rev()
-            .zip((jus + 1)..(jus + lim + 1))
-            .map(|(k, l)| self.grid[k][l])
-            .collect();
+        let diag_up_right: Box<dyn Iterator<Item = (usize, usize)>> =
+            Box::new(((ius - lim)..ius).rev().zip((jus + 1)..(jus + lim + 1)));
         let lim = min(row_size - ius - 1, jus);
-        let diag_down_left: Vec<i64> = ((ius + 1)..(ius + lim + 1))
-            .zip(((jus - lim)..jus).rev())
-            .map(|(k, l)| self.grid[k][l])
-            .collect();
+        let diag_down_left: Box<dyn Iterator<Item = (usize, usize)>> =
+            Box::new(((ius + 1)..(ius + lim + 1)).zip(((jus - lim)..jus).rev()));
         let lim = min(row_size - ius - 1, col_size - jus - 1);
-        let diag_down_right: Vec<i64> = ((ius + 1)..(ius + lim + 1))
-            .zip((jus + 1)..(jus + lim + 1))
-            .map(|(k, l)| self.grid[k][l])
-            .collect();
+        let diag_down_right: Box<dyn Iterator<Item = (usize, usize)>> =
+            Box::new(((ius + 1)..(ius + lim + 1)).zip((jus + 1)..(jus + lim + 1)));
         for (i, v) in vec![
             row_up,
             row_down,
@@ -139,10 +135,10 @@ impl Grid {
             diag_down_left,
             diag_down_right,
         ]
-        .iter()
+        .into_iter()
         .enumerate()
         {
-            count += match self.check_arr_occupied(&v) {
+            count += match self.check_arr_occupied(v) {
                 true => 1,
                 false => 0,
             };
@@ -152,7 +148,16 @@ impl Grid {
         count
     }
 
-    fn check_arr_occupied(&self, inp: &Vec<i64>) -> bool {
+    fn check_arr_occupied(&self, inp: Box<dyn Iterator<Item = (usize, usize)>>) -> bool {
+        for (k, l) in inp {
+            match self.grid[k][l] {
+                2 => return true,
+                1 => return false,
+                _ => (),
+            }
+        }
+        false
+        /*
         for v in inp.iter() {
             if *v == 2 {
                 return true;
@@ -161,6 +166,7 @@ impl Grid {
             }
         }
         false
+        */
     }
 }
 
