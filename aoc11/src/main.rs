@@ -37,7 +37,6 @@ impl Grid {
         occupied_threshold: i64,
         occupied_func: fn(&Grid, i64, i64) -> i64,
     ) -> bool {
-        //let mut new_grid: Vec<Vec<i64>> = vec![vec![0; self.grid[0].len()]; self.grid.len()];
         let mut new_grid = self.grid.clone();
         for i in 0..self.grid.len() {
             for j in 0..self.grid[0].len() {
@@ -56,8 +55,6 @@ impl Grid {
                 };
             }
         }
-        //println!("Old grid: {:?}", self.grid);
-        //println!("New grid: {:?}", new_grid);
         let flag = self.grid == new_grid;
         self.grid = new_grid;
         flag
@@ -96,12 +93,6 @@ impl Grid {
         let jus = j as usize;
         let row_size = self.grid.len();
         let col_size = self.grid[0].len();
-        /*
-        println!(
-            "row_size: {}, ius: {}, col_size: {}, jus: {}",
-            row_size, ius, col_size, jus
-        );
-        */
         let row_up: Box<dyn Iterator<Item = (usize, usize)>> =
             Box::new((0..ius).rev().zip(vec![jus; ius]));
         let row_down: Box<dyn Iterator<Item = (usize, usize)>> =
@@ -142,9 +133,7 @@ impl Grid {
                 true => 1,
                 false => 0,
             };
-            //println!("i: {} v: {:?}, count: {}", i, v, count);
         }
-        //println!("");
         count
     }
 
@@ -157,22 +146,11 @@ impl Grid {
             }
         }
         false
-        /*
-        for v in inp.iter() {
-            if *v == 2 {
-                return true;
-            } else if *v == 1 {
-                return false;
-            }
-        }
-        false
-        */
     }
 }
 
 fn main() {
     let input = read_input("input").unwrap();
-    //println!("{} {}", input.len(), input[input.len() - 1].len());
     let mut grid = Grid::new();
     grid.grid = input.clone();
     let now = Instant::now();
@@ -193,7 +171,6 @@ fn main() {
     println!("Runtime {} ms", now.elapsed().as_millis());
     let now = Instant::now();
     grid.grid = input.clone();
-    //println!("{:?}", grid.grid);
     let mut i = 0;
     while true {
         if i == 1000 {
@@ -203,7 +180,6 @@ fn main() {
             break;
         }
         i += 1;
-        //println!("After {} iteration: {:?}", i, grid.grid);
     }
     println!(
         "Part 2: {}",
