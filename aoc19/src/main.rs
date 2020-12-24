@@ -45,9 +45,13 @@ impl Messages {
         let rule_vals = self.rules.get(&node).unwrap();
         //println!("node: {}, rule_vals: {:?}", node, rule_vals);
         let mut expanded_rule: Vec<String> = Vec::new();
+        let mut expansion_flag = false;
         for val in rule_vals.iter() {
             let new_rule = match val.parse::<u64>() {
-                Ok(v) => self.get_expanded_rule(v),
+                Ok(v) => {
+                    expansion_flag = true;
+                    self.get_expanded_rule(v)
+                }
                 Err(_) => {
                     //println!("Not number: {}", val);
                     (*val).to_string()
@@ -59,16 +63,48 @@ impl Messages {
         //    "node: {}, rule_vals: {:?}, expanded: {:?}",
         //    node, rule_vals, expanded_rule
         //);
-        expanded_rule.join(" ").replace(&[' '][..], "").to_string()
+        return "(?:".to_string()
+            + &expanded_rule.join(" ").replace(&[' '][..], "").to_string()
+            + ")";
+        /*
+        let ors: Vec<bool> = expanded_rule.iter().map(|c| c == "|").collect();
+        if !ors.iter().any(|x| *x == true) && !expansion_flag {
+            return expanded_rule.join(" ").replace(&[' '][..], "").to_string();
+        }
+        let mut non_capturing_groups = vec!["(?:".to_string()];
+        for i in 0..expanded_rule.len() {
+            match ors[i] {
+                false => non_capturing_groups.push(expanded_rule[i].to_string()),
+                true => {
+                    non_capturing_groups.push(")".to_string());
+                    non_capturing_groups.push(expanded_rule[i].to_string());
+                    non_capturing_groups.push("(?:".to_string());
+                }
+            }
+        }
+        non_capturing_groups.push(")".to_string());
+        non_capturing_groups
+            .join(" ")
+            .replace(&[' '][..], "")
+            .to_string()
+        */
+    }
+
+    fn get_num_matches(&self, rule: Regex) -> u64 {
+        self.messages.iter().filter(|v| rule.is_match(v)).count() as u64
     }
 }
 
 fn main() {
-    let input = read_input("ex1").unwrap();
+    let input = read_input("input").unwrap();
     let (rules, messages) = get_parsed_input(&input);
     let mut messages = Messages {
         rules: rules,
         messages: messages,
     };
-    println!("{:?}", messages.get_expanded_rule(0));
+    let rule = messages.get_expanded_rule(0);
+    let rule = "^".to_string() + &rule + "$";
+    let rule = Regex::new(&rule).unwrap();
+    let num_matches = messages.get_num_matches(rule);
+    println!("Part 1: {}", num_matches);
 }
