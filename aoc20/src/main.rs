@@ -85,7 +85,10 @@ impl Jigsaw {
         }
         match rotate_image {
             false => self.tiles.insert(val, tmp_vec),
-            true => None,
+            true => {
+                self.image = tmp_vec;
+                None
+            }
         };
     }
 
@@ -241,19 +244,8 @@ impl Jigsaw {
         for i in 0..square.len() {
             for j in 0..square[0].len() {
                 let current_tile = self.tiles.get(&square[i][j]).unwrap();
-                //println!("Current square: {}", square[i][j]);
                 for k in 0..new_dim {
                     for l in 0..new_dim {
-                        /*
-                        println!(
-                            "{} {} {} {} {}",
-                            i * new_dim + k,
-                            j * new_dim + l,
-                            k,
-                            l,
-                            current_tile[k][l]
-                        );
-                        */
                         image[i * new_dim + k][j * new_dim + l] = current_tile[k][l];
                     }
                 }
@@ -261,13 +253,88 @@ impl Jigsaw {
         }
         self.image = image;
     }
+
+    fn total_hashes(&self) -> usize {
+        let mut count = 0;
+        for v in self.image.iter() {
+            for k in v.iter() {
+                if *k as u8 == 35 {
+                    count += 1;
+                }
+            }
+        }
+        count
+    }
+
+    // Apply the given filter at the given offset and check if there is a sea monster
+    // If yes: Return the number of hashesm else return None
+    //                   #
+    // #    ##    ##    ###
+    //  #  #  #  #  #  #
+    fn convolve(&self, offset_i: usize, offset_j: usize) -> Option<usize> {
+        // Filter is 3 x 20 -> Positions in the filter where hashes are needed are listed below
+        let filter = vec![
+            (0, 18),
+            (1, 0),
+            (1, 5),
+            (1, 6),
+            (1, 11),
+            (1, 12),
+            (1, 17),
+            (1, 18),
+            (1, 19),
+            (2, 1),
+            (2, 4),
+            (2, 7),
+            (2, 10),
+            (2, 13),
+            (2, 16),
+        ];
+        for (pos_i, pos_j) in filter.iter() {
+            if self.image[offset_i + pos_i][offset_j + pos_j] != 35 as u8 {
+                return None;
+            }
+        }
+        Some(15)
+    }
+
+    fn find_sea_monster(&mut self) -> usize {
+        let mut num_hashes = self.total_hashes();
+        for _ in 0..4 {
+            //println!("{:?}", self.image[0]);
+            for i in 0..(self.image.len() - 3) {
+                for j in 0..(self.image[0].len() - 20) {
+                    match self.convolve(i, j) {
+                        None => (),
+                        Some(v) => {
+                            num_hashes -= v;
+                        }
+                    }
+                }
+            }
+            self.flip_180(0, true);
+            //println!("{:?}", self.image[0]);
+            for i in 0..(self.image.len() - 3) {
+                for j in 0..(self.image[0].len() - 20) {
+                    match self.convolve(i, j) {
+                        None => (),
+                        Some(v) => {
+                            num_hashes -= v;
+                        }
+                    }
+                }
+            }
+            self.flip_180(0, true);
+            self.rotate_forward(0, true);
+        }
+        num_hashes
+    }
 }
 
 fn main() {
-    let input = read_input("ex1").unwrap();
+    let input = read_input("input").unwrap();
     let input = get_parsed_input(input);
     let num_tiles = (input.len() as f64).sqrt() as usize;
-    println!("Num_tiles: {}", num_tiles);
     let mut square = vec![vec![0; num_tiles]; num_tiles];
     let mut unseen: HashSet<u64> = input.keys().cloned().collect();
     let mut jigsaw = Jigsaw {
@@ -276,25 +343,14 @@ fn main() {
         dimension: 10,
         image: vec![],
     };
+    let now = Instant::now();
     let square = jigsaw.backtrack(0, 0, &mut square, &mut unseen).unwrap();
     println!("Part1: {:?}", square);
+    println!("Time elapsed in ms: {}", now.elapsed().as_millis());
+    let now = Instant::now();
     jigsaw.remove_borders();
     jigsaw.construct_image(&square);
-    //println!("{:?}", jigsaw.image);
-    /*
-    let mut ex_image = read_input("ex1-image").unwrap();
-    let mut new_image = Vec::new();
-    for v in ex_image.into_iter() {
-        new_image.push(v.into_bytes());
-    }
-    println!("{:?}", jigsaw.tiles.get(&1171));
-    println!(
-        "{}",
-        jigsaw
-            .image
-            .iter()
-            .zip(new_image.iter())
-            .all(|(a, b)| a == b)
-    );
-    */
+    let num_hashes = jigsaw.find_sea_monster();
+    println!("Part 2: {}", num_hashes);
+    println!("Time elapsed in ms: {}", now.elapsed().as_millis());
 }
