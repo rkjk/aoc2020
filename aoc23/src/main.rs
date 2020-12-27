@@ -3,7 +3,6 @@ use std::time::Instant;
 
 struct CupGame {
     circle: Vec<u64>,
-    cache: HashSet<Vec<u64>>,
 }
 
 impl CupGame {
@@ -13,6 +12,9 @@ impl CupGame {
         let max_val = self.circle.iter().max().unwrap().clone();
         let circle_len = self.circle.len().clone();
         for i in 0..num_iter {
+            if i % 10000 == 0 {
+                println!("Iteration {}", i);
+            }
             // Current cup
             let current_cup = self.circle[current_cup_ind];
 
@@ -82,23 +84,20 @@ fn main() {
     let input = vec![5, 8, 9, 1, 7, 4, 2, 6, 3];
     let mut cupgame = CupGame {
         circle: input.clone(),
-        cache: HashSet::new(),
     };
     let mut res = cupgame.run_game(100);
     let one = res.iter().position(|&v| v == 1).unwrap();
     let mut ans_vec = res[(one + 1)..].to_vec();
     ans_vec.extend(res[..one].to_vec());
     println!("Part 1: {:?}", ans_vec);
-
+    let now = Instant::now();
     let mut new_input = input.clone();
     for i in 10..1000001 {
         new_input.push(i);
     }
-    let mut new_cupgame = CupGame {
-        circle: new_input,
-        cache: HashSet::new(),
-    };
-    let res = new_cupgame.run_game(1000);
+    let mut new_cupgame = CupGame { circle: new_input };
+    let res = new_cupgame.run_game(10000000);
+    println!("Elapsed time {}", now.elapsed().as_secs_f32());
     println!("{}", res.len());
     let one = res.iter().position(|&v| v == 1).unwrap();
     println!("Part 2: {} {}", res[one + 1], res[one + 2]);
