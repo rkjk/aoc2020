@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, Error, ErrorKind};
@@ -67,8 +67,66 @@ impl Tiles {
         //println!("{:?}", self.tile_coords);
     }
 
-    fn get_black_tiles(&self) -> usize {
+    fn get_num_black_tiles(&self) -> usize {
         self.tile_coords.values().filter(|v| **v % 2 != 0).count()
+    }
+
+    fn get_black_tiles(&self) -> HashSet<(i64, i64)> {
+        let mut set = HashSet::new();
+        for (k, v) in self.tile_coords.iter() {
+            if *v % 2 != 0 {
+                set.insert(*k);
+            }
+        }
+        set
+    }
+
+    fn run_exhibit(&self) -> usize {
+        let mut black_tiles = self.get_black_tiles();
+        let neighbors = |x: &i64, y: &i64| {
+            vec![
+                (*x + 1, *y),
+                (*x, *y - 1),
+                (*x - 1, *y),
+                (*x - 1, *y - 1),
+                (*x + 1, *y + 1),
+                (*x, *y + 1),
+            ]
+        };
+        for _ in 0..100 {
+            let mut new_black_tiles = HashSet::new();
+            let mut white_tiles = HashSet::new();
+            let mut new_white_tiles = HashSet::new();
+            for (x, y) in black_tiles.iter() {
+                // Check how many neighbors are black tiles. If 1 or 2, then don't flip to white
+                let mut black_neighbor_count = 0;
+                for n in neighbors(x, y).iter() {
+                    if black_tiles.contains(n) {
+                        black_neighbor_count += 1;
+                    } else {
+                        white_tiles.insert(n.clone());
+                    }
+                }
+                match black_neighbor_count {
+                    1 | 2 => new_black_tiles.insert((*x, *y)),
+                    _ => new_white_tiles.insert((*x, *y)),
+                };
+            }
+            for (x, y) in white_tiles.iter() {
+                let mut black_neighbor_count = 0;
+                for n in neighbors(x, y).iter() {
+                    if black_tiles.contains(n) {
+                        black_neighbor_count += 1;
+                    }
+                }
+                match black_neighbor_count {
+                    2 => new_black_tiles.insert((*x, *y)),
+                    _ => new_white_tiles.insert((*x, *y)),
+                };
+            }
+            black_tiles = new_black_tiles;
+        }
+        black_tiles.len()
     }
 }
 
@@ -79,5 +137,6 @@ fn main() {
         tile_coords: HashMap::new(),
     };
     tiles.get_coords();
-    println!("Part 1: {}", tiles.get_black_tiles());
+    println!("Part 1: {}", tiles.get_num_black_tiles());
+    println!("Part 2: {}", tiles.run_exhibit());
 }
